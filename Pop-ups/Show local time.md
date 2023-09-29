@@ -9,3 +9,8 @@ var tzLookup = Dictionary('{"-8":"Pacific", "-7":"Mountain", "-6":"Central", "-4
 var newTimestamp = DateAdd($feature.TimeStamp, Number(featTZ), 'hours');
 return newTimestamp
 ```
+
+Next steps:
+- Account for daylight savings time
+- Account for more time zones
+- Programatically generate a dictionary of time zones and their UTC offset
