@@ -1,201 +1,144 @@
-```html
-<!DOCTYPE html>
+```js
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
-    <title>Custom ElevationLayer - Exaggerating elevation | Sample | ArcGIS Maps SDK for JavaScript 4.28</title>
 
-    <link rel="stylesheet" href="https://js.arcgis.com/4.28/esri/themes/light/main.css" />
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>FlowRenderer with effects and blending | Sample | ArcGIS Maps SDK for JavaScript 4.28</title>
 
-    <script src="https://js.arcgis.com/4.28/"></script>
+  <link rel="stylesheet" href="https://js.arcgis.com/4.28/esri/themes/dark/main.css" />
+  <script src="https://js.arcgis.com/4.28/"></script>
 
-    <script>
-      require([
-        "esri/Map",
-        "esri/views/SceneView",
-        "esri/layers/ElevationLayer",
-        "esri/layers/BaseElevationLayer",
-        "esri/Basemap",
-        "esri/layers/TileLayer"
-      ], (Map, SceneView, ElevationLayer, BaseElevationLayer, Basemap, TileLayer) => {
-        //////////////////////////////////////////////
-        //
-        //   Create a subclass of BaseElevationLayer
-        //
-        /////////////////////////////////////////////
+  <style>
+    html,
+    body,
+    #viewDiv {
+      padding: 0;
+      margin: 0;
+      height: 100%;
+      width: 100%;
+      background-color:#4c4c4c;
+    }
+  </style>
 
-        const ExaggeratedElevationLayer = BaseElevationLayer.createSubclass({
-          // Add an exaggeration property whose value will be used
-          // to multiply the elevations at each tile by a specified
-          // factor. In this case terrain will render 100x the actual elevation.
-
-          properties: {
-            exaggeration: 70
-          },
-
-          // The load() method is called when the layer is added to the map
-          // prior to it being rendered in the view.
-          load: function () {
-
-            // TopoBathy3D contains elevation values for both land and ocean ground
-            this._elevation = new ElevationLayer({
-              url: "https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/TopoBathy3D/ImageServer"
-            });
-
-            // wait for the elevation layer to load before resolving load()
-            this.addResolvingPromise(
-              this._elevation.load().then(() => {
-                // get tileInfo, spatialReference and fullExtent from the elevation service
-                // this is required for elevation services with a custom spatialReference
-                this.tileInfo = this._elevation.tileInfo;
-                this.spatialReference = this._elevation.spatialReference;
-                this.fullExtent = this._elevation.fullExtent;
-              })
-            );
-
-            return this;
-          },
-
-          // Fetches the tile(s) visible in the view
-          fetchTile: function (level, row, col, options) {
-            // calls fetchTile() on the elevationlayer for the tiles
-            // visible in the view
-            return this._elevation.fetchTile(level, row, col, options).then(
-              function (data) {
-                const exaggeration = this.exaggeration;
-                // `data` is an object that contains the
-                // the width and the height of the tile in pixels,
-                // and the values of each pixel
-                for (let i = 0; i < data.values.length; i++) {
-                  // Multiply the given pixel value
-                  // by the exaggeration value
-                  data.values[i] = data.values[i] * exaggeration;
-                }
-
-                return data;
-              }.bind(this)
-            );
-          }
-        });
-
-        const basemap = new Basemap({
-          baseLayers: [
-            new TileLayer({
-              url:
-                "https://tiles.arcgis.com/tiles/nGt4QxSblgDfeJn9/arcgis/rest/services/terrain_with_heavy_bathymetry/MapServer",
-              copyright:
-                'Bathymetry, topography and satellite imagery from <a href="https://visibleearth.nasa.gov/view_cat.php?categoryID=1484" target="_blank">NASA Visible Earth</a> | <a href="http://www.aag.org/global_ecosystems" target="_blank">World Ecological Land Units, AAG</a> | Oceans, glaciers and water bodies from <a href="https://www.naturalearthdata.com/" target="_blank">Natural Earth</a>'
-            })
-          ]
-        });
-
-        const elevationLayer = new ExaggeratedElevationLayer();
-
-        // Add the exaggerated elevation layer to the map's ground
-        // in place of the default world elevation service
-        const map = new Map({
-          basemap: basemap,
-          ground: {
-            layers: [elevationLayer]
-          }
-        });
-
-        const view = new SceneView({
-          container: "viewDiv",
-          map: map,
-          alphaCompositingEnabled: true,
-          qualityProfile: "high",
-          camera: {
-            position: [-55.039, 14.948, 19921223.3],
-            heading: 2.03,
-            tilt: 0.13
-          },
-          environment: {
-            background: {
-              type: "color",
-              color: [255, 252, 244, 0]
-            },
-            starsEnabled: false,
-            atmosphereEnabled: false,
-            lighting: {
-              type: "virtual"
-            }
-          },
-          constraints: {
-            altitude: {
-              min: 5000000
-            }
-          },
-          popup: {
-            dockEnabled: true,
-            dockOptions: {
-              position: "top-right",
-              breakpoint: false,
-              buttonEnabled: false
-            },
-            collapseEnabled: false
-          },
-          highlightOptions: {
-            color: [255, 255, 255],
-            haloOpacity: 0.5
-          }
-        });
-
-        let exaggerated = true;
-
-        document.getElementById("exaggerate").addEventListener("click", (event) => {
-          if (exaggerated) {
-            map.ground = "world-elevation";
-            event.target.innerHTML = "Enable exaggeration";
-            exaggerated = false;
-          } else {
-            map.ground = {
-              layers: [elevationLayer]
-            };
-            event.target.innerHTML = "Disable exaggeration";
-            exaggerated = true;
-          }
-        });
+  <script>
+   require([
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/layers/ImageryTileLayer",
+      "esri/layers/TileLayer",
+      "esri/layers/GroupLayer",
+      "esri/rest/support/MultipartColorRamp",
+      "esri/rest/support/AlgorithmicColorRamp",
+      "esri/Color",
+      "esri/widgets/Legend",
+      "esri/widgets/Fullscreen"
+    ], function (
+      Map,
+      MapView,
+      ImageryTileLayer,
+      TileLayer,
+      GroupLayer,
+      MultipartColorRamp,
+      AlgorithmicColorRamp,
+      Color,
+      Legend,
+      Fullscreen
+    ) {
+      // serves as a basemap layer
+      const spilhausBasemap = new TileLayer({
+        url: "https://tiles.arcgis.com/tiles/nGt4QxSblgDfeJn9/arcgis/rest/services/Spilhaus_Vibrant_Basemap/MapServer",
+        effect: "saturate(10%) brightness(0.3)" // dim brightness to create darker style basemap
       });
+
+      const colorRamp = new MultipartColorRamp({
+        colorRamps: [
+          new AlgorithmicColorRamp({
+            fromColor: new Color([20, 100, 150, 255]),
+            toColor: new Color([70, 0, 150, 255])
+          }),
+          new AlgorithmicColorRamp({
+            fromColor: new Color([70, 0, 150, 255]),
+            toColor: new Color([170, 0, 120, 255])
+          }),
+          new AlgorithmicColorRamp({
+            fromColor: new Color([170, 0, 120, 255]),
+            toColor: new Color([230, 100, 60, 255])
+          }),
+          new AlgorithmicColorRamp({
+            fromColor: new Color([230, 100, 60, 255]),
+            toColor: new Color([255, 170, 0, 255])
+          }),
+          new AlgorithmicColorRamp({
+            fromColor: new Color([255, 170, 0, 255]),
+            toColor: new Color([255, 255, 0, 255])
+          }),
+        ]
+      });
+
+      // sea surface temperature, visualized with raster stretch renderer
+      const temperatureLayer = new ImageryTileLayer({
+        url: "https://tiledimageservices.arcgis.com/jIL9msH9OI208GCb/arcgis/rest/services/HyCOM_Surface_Temperature___Spilhaus/ImageServer",
+        renderer: {
+          colorRamp,
+          stretchType: "min-max",
+          type: "raster-stretch"
+        }
+      });
+
+
+      // ocean currents, visualized with flow renderer
+      const currentsLayer = new ImageryTileLayer({
+        url: "https://tiledimageservices.arcgis.com/jIL9msH9OI208GCb/arcgis/rest/services/Spilhaus_UV_ocean_currents/ImageServer",
+        renderer: {
+          type: "flow", // autocasts to FlowRenderer
+          density: 1,
+          maxPathLength: 10, // max length of a streamline will be 10
+          trailWidth: "2px"
+        },
+        blendMode: "destination-in", // temperature layer will only display on top of this layer
+      });
+
+
+      const groupLayer = new GroupLayer({
+        effect: "bloom(2, 0.5px, 0.0)", // apply bloom effect to make the colors pop
+        layers: [temperatureLayer, currentsLayer]
+      });
+
+
+      const map = new Map({
+        basemap: {
+          baseLayers: [spilhausBasemap]
+        },
+        layers: [groupLayer]
+      });
+
+      const view = new MapView({
+        container: "viewDiv",
+        map: map,
+        scale: 40000000,
+        center: [-289666, -3085785]
+      });
+      // add legend for temperature layer
+      const legend = new Legend({
+        view: view,
+        layerInfos: [{
+          layer: temperatureLayer,
+          title: "Sea surface temperature"
+        }]
+      });
+      view.ui.add(legend, "top-right");
+
+      // add fullscreen widget
+      fullscreen = new Fullscreen({
+        view: view
+      });
+      view.ui.add(fullscreen, "top-left");
+    });
     </script>
-    <style>
-      html,
-      body,
-      #viewDiv {
-        padding: 0;
-        margin: 0;
-        height: 100%;
-        width: 100%;
-      }
-
-      body {
-        background: radial-gradient(#12bff2, #0269a1);
-      }
-
-      #viewDiv canvas {
-        filter: saturate(1.2) drop-shadow(0 0 20px white);
-      }
-
-      .buttons {
-        position: absolute;
-        bottom: 20px;
-        left: 0;
-        right: 0;
-        text-align: center;
-      }
-
-      .esri-button {
-        display: inline;
-        max-width: 200px;
-      }
-    </style>
   </head>
   <body>
     <div id="viewDiv"></div>
-    <div class="buttons">
-      <button id="exaggerate" class="esri-button">Disable exaggeration</button>
-    </div>
   </body>
 </html>
 ```
