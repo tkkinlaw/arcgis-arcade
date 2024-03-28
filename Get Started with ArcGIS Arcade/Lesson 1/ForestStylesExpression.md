@@ -1,6 +1,6 @@
 ### This is used in exercise 1
 
-```
+```js
 var fType = $feature.forest_a_1
 
 if (fType == "HL") {
