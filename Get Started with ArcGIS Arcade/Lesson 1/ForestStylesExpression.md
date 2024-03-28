@@ -1,6 +1,6 @@
 ### This is used in exercise 1
 
-`var fType = $feature.forest_a_1
+```var fType = $feature.forest_a_1
 
 if (fType == "HL") {
     return "Protection";
@@ -16,4 +16,4 @@ if (fType == "HL") {
     return "Conservation";
 } else {
     return "";
-}`
+}```
