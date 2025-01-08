@@ -1,10 +1,6 @@
-# Popups using a knowledge graph
+# Arcade Experssions using Knowledge Graphs
 
-## The Arcade expression
-
-## Arcade Experssions
-
-### Pop up expression
+## Pop up expression
 ```js
 var query = 'MATCH (:Supplier{SupplierName:$NameOfSupplier})-[:Supplies]->(:Distributor)-[:SellsTo]->(p:ProcessingPlant) RETURN p'
 var plants = QueryGraph($graph, query, {'NameOfSupplier':$feature.SupplierName})
@@ -28,7 +24,8 @@ formattedCountries += plantText
 }
 return formattedCountries
 ```
-### Dashboard: query results in table element
+## Dashboard expressions
+### Table element
 ```js
 var p = Portal('https://YOUR PORTAL HERE/portal')
 var itemID = 'ItemID12345'
@@ -51,7 +48,7 @@ var jsonDictionary = { fields: [
 return FeatureSet(Text(jsonDictionary));
 ```
 
-### Dashboard: query results in pie chart element
+### Pie chart element
 ```js
 var p = Portal('https://YOUR PORTAL HERE/portal')
 var itemID = 'ItemID12345'
